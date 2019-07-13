@@ -19,7 +19,7 @@ spec:
       restartPolicy: Always
       serviceAccountName: cost-model
       containers:
-        - image: ajaytripathy/kubecost-cost-model:latest
+        - image: cdjg35/kubecost-cost-model:latest
           name: cost-model
           resources:
             requests:
