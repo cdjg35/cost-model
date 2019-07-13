@@ -6,26 +6,41 @@ jobs:
     executor: twistcli/default
     steps:
       - checkout
-      - run: 
-          TAG=0.1.$CIRCLE_BUILD_NUM
-          docker build -t cdjg35/kubecost:$TAG .
+      - run: 'docker build -t cdjg35/kubecost-cost-model:$TAG .'
       - run: mkdir -p workspace
-      - run: 'docker save cdjg35/kubecost:$TAG -o workspace/image.tar'
+      - run: 'docker save cdjg35/kubecost-cost-model:$TAG -o workspace/image.tar'
       - persist_to_workspace:
           root: workspace
           paths:
             - image.tar
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run: | 
+          TAG=0.1.$CIRCLE_BUILD_NUM
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker build -t cdjg35/kubecost-cost-model:$TAG .
+          docker push cdjg35/kubecost-cost-model:$TAG
+  deploy:
+    machine: true
+    steps:
+      - checkout
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker build -t cdjg35/kubecost-cost-model:latest .
+          docker push cdjg35/kubecost-cost-model:latest
+
 workflows:
   scan-image:
-    jobs: 
-      TAG=0.1.$CIRCLE_BUILD_NUM
-      - docker-build-and-save
-      - twistcli/scan-image:
-          requires:
-            - docker-build-and-save
-          context: tl_scan_context
-          image: 'cdjg35/kubecost:$TAG'
-          imagetar: image.tar
-          vuln-thresh: critical
-          comp-thresh: ''
-          only-fixed: true
+  jobs:
+    - docker-build-and-save
+    - twistcli/scan-image:
+        requires:
+          - docker-build-and-save
+        context: tl_scan_context
+        image: 'docker build -t cdjg35/kubecost-cost-model:$TAG'
+        imagetar: image.tar
+        vuln-thresh: critical
+        comp-thresh: ''
+        only-fixed: true
