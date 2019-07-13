@@ -1,4 +1,6 @@
 version: 2
+orbs:
+  anchore-engine: anchore/anchore-engine@1.0.0
 jobs:                 
   build:
     machine: true
@@ -30,3 +32,12 @@ workflows:
             branches:
               only:
                 - master
+  scan_image:
+    jobs:
+      - anchore/image_scan:
+          image_name: anchore/anchore-engine:latest
+          timeout: '300'
+          private_registry: True
+          registry_name: docker.io
+          registry_user: "${DOCKER_USER}"
+          registry_pass: "${DOCKER_PASS}"
