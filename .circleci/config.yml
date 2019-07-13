@@ -1,7 +1,26 @@
-version: 2
+version: 2.1
 orbs:
-  anchore-engine: anchore/anchore-engine@1.0.0
-jobs:                 
+  anchore-engine: anchore/anchore-engine@1.5.0
+jobs:
+  scan:
+    executor: anchore/anchore_engine
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run: | 
+          TAG=0.1.$CIRCLE_BUILD_NUM
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker build -t cdjg35/kubecost-cost-model:$TAG .
+          docker push cdjg35/kubecost-cost-model:$TAG
+      - anchore/analyze_local_image:
+          dockerfile_path: ./Dockerfile
+          image_name: ecdjg35/kubecost-cost-model:$TAG
+          policy_bundle_file_path: .circleci/.anchore/policy_bundle.json
+          policy_failure: true
+          timeout: '500'
+      - anchore/parse_reports
+      - store_artifacts:
+          path: anchore-reports    
   build:
     machine: true
     steps:
@@ -25,6 +44,7 @@ workflows:
   build-and-deploy:
     jobs:
       - build
+      - scan
       - deploy:
           requires: 
             - build
@@ -32,12 +52,3 @@ workflows:
             branches:
               only:
                 - master
-  scan_image:
-    jobs:
-      - anchore/image_scan:
-          image_name: anchore/anchore-engine:latest
-          timeout: '300'
-          private_registry: True
-          registry_name: docker.io
-          registry_user: "${DOCKER_USER}"
-          registry_pass: "${DOCKER_PASS}"
