@@ -1,6 +1,4 @@
-version: 2.1
-orbs:
-  clair-scanner: ovotech/clair-scanner@1.4.46
+version: 2
 jobs:                 
   build:
     machine: true
