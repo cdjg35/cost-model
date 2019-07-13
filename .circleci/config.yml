@@ -1,18 +1,7 @@
 version: 2.1
 orbs:
-  twistcli: twistlock/twistcli-scan@1.0.4
-jobs:
-  docker-build-and-save:
-    executor: twistcli/default
-    steps:
-      - checkout
-      - run: 'docker build -t cdjg35/kubecost-cost-model:$TAG .'
-      - run: mkdir -p workspace
-      - run: 'docker save cdjg35/kubecost-cost-model:$TAG -o workspace/image.tar'
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - image.tar
+  clair-scanner: ovotech/clair-scanner@1.4.46
+jobs:                 
   build:
     machine: true
     steps:
@@ -32,15 +21,14 @@ jobs:
           docker push cdjg35/kubecost-cost-model:latest
 
 workflows:
-  scan-image:
-  jobs:
-    - docker-build-and-save
-    - twistcli/scan-image:
-        requires:
-          - docker-build-and-save
-        context: tl_scan_context
-        image: 'docker build -t cdjg35/kubecost-cost-model:$TAG'
-        imagetar: image.tar
-        vuln-thresh: critical
-        comp-thresh: ''
-        only-fixed: true
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires: 
+            - build
+          filters:
+            branches:
+              only:
+                - master
